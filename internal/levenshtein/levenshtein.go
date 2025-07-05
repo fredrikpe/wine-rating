@@ -15,10 +15,10 @@ func NormalizedDistance(a, b string) float64 {
 	maxLen := max(utf8.RuneCountInString(a), utf8.RuneCountInString(b))
 
 	if maxLen == 0 {
-		return 1.0 // both strings are empty
+		return 0.0 // both strings are empty
 	}
 
-	return 1.0 - float64(distance)/float64(maxLen)
+	return float64(distance) / float64(maxLen)
 }
 
 // ComputeDistance computes the levenshtein distance between the two

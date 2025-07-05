@@ -3,57 +3,134 @@ package vivino
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
+	"wine_rating/internal/db"
 	"wine_rating/internal/match"
 )
 
-func FindVivinoMatch(name, producer string) (VivinoHit, error) {
-	hits, err := getVivinoHits(normalizeQuery(name, producer))
+type Match struct {
+	Id             int
+	ExactVintage   bool
+	RatingsAverage float64
+	Confidence     float64
+}
+
+func FindMatch(store *db.Store, name, producer string, year *int) (Match, error) {
+	wines, err := getVivinoHits(store, normalizeQuery(name, producer))
 	if err != nil {
-		return VivinoHit{}, err
+		return Match{}, fmt.Errorf("getVivinoHits failed: %w", err)
 	}
 
-	best, distance := bestMatch(hits, match.Wine{
+	best, confidence := bestMatch(wines, match.Wine{
 		Name:     name,
 		Producer: producer,
 	})
-	log.Printf("DEBUG: Best match id=%d distance=%+v",
-		best.Id, distance)
 
-	return best, nil
+	var match *db.VivinoVintageDbo
+	exactVintage := false
+
+	for _, vintage := range best.Vintages {
+		if year != nil && strconv.Itoa(*year) == vintage.Year {
+			match = &vintage
+			exactVintage = true
+			break
+		}
+		if year == nil && vintage.Year == "" {
+			match = &vintage
+			break
+		}
+	}
+	if match == nil {
+		return Match{}, fmt.Errorf("match was nil: %+v %w", best, err)
+	}
+
+	return Match{
+		Id:             best.Id,
+		ExactVintage:   exactVintage,
+		RatingsAverage: match.RatingsAverage,
+		Confidence:     confidence,
+	}, nil
 }
 
 func Url(id int) string {
 	return fmt.Sprintf("https://vivino.com/w/%d", id)
 }
 
-func bestMatch(hits []VivinoHit, wine match.Wine) (VivinoHit, match.Distance) {
-	max := VivinoHit{}
-	maxScore := 0
+func getVivinoHits(db *db.Store, query string) ([]db.VivinoWineDbo, error) {
+	wines, _, err := db.GetVivinoQuery(query)
+	if err != nil {
+		return nil, fmt.Errorf("get query failed: %w", err)
+	}
+	if len(wines) > 0 {
+		log.Println("Returning wines from db")
+		return wines, nil
+	}
+	hits, err := algoliaSearch(query)
+	if err != nil {
+		return nil, fmt.Errorf("get query failed: %w", err)
+	}
+	dbos := hitsToDbos(hits)
+
+	err = db.UpsertQuery(query, dbos)
+	if err != nil {
+		return nil, fmt.Errorf("get query failed: %w", err)
+	}
+
+	return dbos, nil
+}
+
+func hitsToDbos(hits []VivinoHit) []db.VivinoWineDbo {
+	var result []db.VivinoWineDbo
 	for _, hit := range hits {
-		score := match.Similarity(
+		result = append(result, hitToDbo(hit))
+	}
+	return result
+}
+
+func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
+	wine := db.VivinoWineDbo{
+		Id:       hit.Id,
+		Name:     hit.Name,
+		Producer: hit.Winery.Name,
+		Region:   hit.Winery.Region.Name,
+		Country:  hit.Winery.Region.Country,
+	}
+
+	for _, v := range hit.Vintages {
+		wine.Vintages = append(wine.Vintages, db.VivinoVintageDbo{
+			Id:             v.Id,
+			VivinoWineId:   hit.Id,
+			Year:           v.Year,
+			RatingsAverage: v.Statistics.RatingsAverage,
+			RatingsCount:   v.Statistics.RatingsCount,
+			ReviewsCount:   0,
+			LabelsCount:    v.Statistics.LabelsCount,
+		})
+	}
+
+	return wine
+}
+
+func bestMatch(hits []db.VivinoWineDbo, wine match.Wine) (db.VivinoWineDbo, float64) {
+	var best db.VivinoWineDbo
+	confidence := 0.0
+	for _, hit := range hits {
+		c := match.Confidence(
 			match.Wine{
 				Name:     hit.Name,
-				Producer: hit.Winery.Name,
-				Region:   hit.Region.Name,
-				Country:  hit.Region.Country,
+				Producer: hit.Producer,
+				Region:   hit.Region,
+				Country:  hit.Country,
 			},
 			wine,
 		)
-		if score > maxScore {
-			max = hit
-			maxScore = score
+		if c > confidence {
+			best = hit
+			confidence = c
 		}
 	}
-	return max, match.WineDistance(
-		match.Wine{
-			Name:     max.Name,
-			Producer: max.Winery.Name,
-			Region:   max.Region.Name,
-			Country:  max.Region.Country,
-		},
-		wine,
-	)
+	return best, confidence
 }
 
 func normalizeQuery(name, producer string) string {

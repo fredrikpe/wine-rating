@@ -1,7 +1,7 @@
 package match
 
 import (
-	"math"
+	"log"
 	"sort"
 	"strings"
 	"unicode"
@@ -26,27 +26,55 @@ type Distance struct {
 
 func WineDistance(a, b Wine) Distance {
 	return Distance{
-		Name:     jaccardLev(a.Name, b.Name),
-		Producer: jaccardLev(a.Producer, b.Producer),
-		Region:   jaccardLev(a.Region, b.Region),
-		Country:  jaccardLev(a.Country, b.Country),
+		Name:     jaccardLevDistance(a.Name, b.Name),
+		Producer: jaccardLevDistance(a.Producer, b.Producer),
+		Region:   jaccardLevDistance(a.Region, b.Region),
+		Country:  jaccardLevDistance(a.Country, b.Country),
 	}
 }
 
-func Similarity(a, b Wine) int {
-	distance := WineDistance(a, b)
+func Confidence(a, b Wine) float64 {
+	d := WineDistance(a, b)
 
-	score := 0
-	score += int(math.Round(distance.Name * 5))
-	score += int(math.Round(distance.Producer * 10))
-	if distance.Region <= 0.4 {
-		score += 1
-	}
-	if distance.Country <= 0.4 {
-		score += 1
+	nameSim := 1 - d.Name
+	producerSim := 1 - d.Producer
+	regionSim := 1 - d.Region
+	countrySim := 1 - d.Country
+
+	const (
+		wProducer = 0.50
+		wName     = 0.3
+		wRegion   = 0.05
+		wCountry  = 0.15
+	)
+
+	c := producerSim*wProducer +
+		nameSim*wName +
+		regionSim*wRegion +
+		countrySim*wCountry
+	if false {
+		log.Printf(`DEBUG: Confidence match
+	  Wine A: %-30s
+	  Wine B: %-30s
+
+	  Distances:
+	    Name:     %.2f (%s ↔ %s)
+	    Producer: %.2f (%s ↔ %s)
+	    Region:   %.2f (%s ↔ %s)
+	    Country:  %.2f (%s ↔ %s)
+
+	  Final Confidence: %.2f
+	`,
+			a.Name, b.Name,
+			d.Name, a.Name, b.Name,
+			d.Producer, a.Producer, b.Producer,
+			d.Region, a.Region, b.Region,
+			d.Country, a.Country, b.Country,
+			c,
+		)
 	}
 
-	return score
+	return c
 }
 
 func Normalize(s string) string {
@@ -68,14 +96,14 @@ func SortedUnique(s string) []string {
 	return tokens
 }
 
-func jaccardLev(a, b string) float64 {
+func jaccardLevDistance(a, b string) float64 {
 	ca := removeDiacritics(strings.ToLower(a))
 	cb := removeDiacritics(strings.ToLower(b))
 
 	jaccard := jaccardSimilarity(SortedUnique(ca), SortedUnique(cb))
 	lev := levenshtein.NormalizedDistance(ca, cb)
 
-	return 0.7*jaccard + 0.3*(1-lev)
+	return 0.7*(1-jaccard) + 0.3*lev
 }
 
 func jaccardSimilarity(a, b []string) float64 {

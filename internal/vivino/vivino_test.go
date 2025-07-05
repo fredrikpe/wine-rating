@@ -34,10 +34,10 @@ func TestFindRightTommasiValpolicella(t *testing.T) {
 	wine := match.Wine{
 		Name:     "Valpolicella",
 		Producer: "Tommasi",
-		Region:   "Tuscany",
+		Region:   "Valpolicella",
 		Country:  "",
 	}
-	hit, _ := bestMatch(hits, wine)
+	hit, _ := bestMatch(hitsToDbos(hits), wine)
 	if hit.Id != 1299576 {
 		t.Fatalf("Found wrong wine: %v", hit)
 	}

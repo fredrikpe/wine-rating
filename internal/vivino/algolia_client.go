@@ -17,13 +17,14 @@ type VivinoHit struct {
 	Id     int    `json:"id"`
 	Name   string `json:"name"`
 	Winery struct {
-		Name string `json:"name"`
+		Name   string `json:"name"`
+		Region struct {
+			Name    string `json:"name"`
+			Country string `json:"country"`
+		} `json:"region"`
 	} `json:"winery"`
-	Region struct {
-		Name    string `json:"name"`
-		Country string `json:"country"`
-	} `json:"region"`
 	Vintages []struct {
+		Id         int        `json:"id"`
 		Year       string     `json:"year"`
 		Statistics Statistics `json:"statistics"`
 	} `json:"vintages"`
@@ -33,9 +34,10 @@ type VivinoHit struct {
 type Statistics struct {
 	RatingsAverage float64 `json:"ratings_average"`
 	RatingsCount   int     `json:"ratings_count"`
+	LabelsCount    int     `json:"labels_count"`
 }
 
-func getVivinoHits(query string) ([]VivinoHit, error) {
+func algoliaSearch(query string) ([]VivinoHit, error) {
 	body, _ := json.Marshal(
 		map[string]any{"query": query, "hitsPerPage": 25},
 	)
