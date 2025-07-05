@@ -12,7 +12,7 @@ import (
 const RATINGS_COUNT_THRESHOLD = 75
 
 type Match struct {
-	Id             int
+	Url            string
 	ExactVintage   bool
 	RatingsAverage *float64
 	Confidence     float64
@@ -46,7 +46,7 @@ func FindMatch(store *db.Store, name, producer string, year *int) (Match, error)
 	}
 
 	return Match{
-		Id:             best.Id,
+		Url:            Url(best.Id),
 		ExactVintage:   exactVintage,
 		RatingsAverage: ratingsAverage,
 		Confidence:     confidence,

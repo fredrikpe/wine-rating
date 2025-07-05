@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"wine_rating/internal"
 	"wine_rating/internal/db"
+	"wine_rating/internal/web"
 )
 
 func main() {
@@ -22,7 +22,8 @@ func main() {
 	}
 	db := db.NewDb(dbSqlite)
 
-	http.HandleFunc("/enrich", internal.EnrichHandler(db))
+	http.HandleFunc("/enrich", web.EnrichHandler(db))
+	http.HandleFunc("/match", web.MatchHandler(db))
 
 	log.Println("Server started on :8080")
 	http.ListenAndServe(":8080", nil)

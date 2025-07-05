@@ -46,7 +46,7 @@ func Confidence(a, b Wine) float64 {
 
 	c := d.Producer*wProducer + d.Name*wName
 
-	if true {
+	if false {
 		log.Printf(`DEBUG: Confidence match
 	  Wine A: %-30s
 	  Wine B: %-30s
