@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"wine_rating/internal/db"
+	"wine_rating/internal/similarity"
 	"wine_rating/internal/vivino"
 )
 
@@ -31,6 +32,11 @@ func MatchHandler(db *db.Store) http.HandlerFunc {
 		match, err := vivino.FindMatch(db, req.Name, req.Producer, req.Year)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("FindMatch error: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		if similarity.HighEnough(match.Similarity) {
+			http.Error(w, "No sufficiently confident match found", http.StatusNotFound)
 			return
 		}
 

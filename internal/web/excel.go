@@ -92,7 +92,7 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 	}
 
 	excel.SetCellValue(sheetName, cell(outCols.URLCol), match.Url)
-	excel.SetCellValue(sheetName, cell(outCols.ConfCol), fmt.Sprintf("%.2f", match.Confidence))
+	excel.SetCellValue(sheetName, cell(outCols.ConfCol), fmt.Sprintf("%.2f", match.Similarity))
 
 	return nil
 }

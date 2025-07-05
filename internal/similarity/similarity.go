@@ -1,4 +1,4 @@
-package match
+package similarity
 
 import (
 	"log"
@@ -20,31 +20,16 @@ type Wine struct {
 	Region   string
 }
 
-type Similarity struct {
-	Name     float64
-	Producer float64
-}
-
-func WineSimilarity(a, b Wine) Similarity {
-	return Similarity{
-		Name:     mongeElkanSimilarity(stripYearAndProducerWords(a), stripYearAndProducerWords(b)),
-		Producer: mongeElkanSimilarity(a.Producer, b.Producer),
-	}
-}
-
-func HighEnough(c float64) bool {
-	return c > 0.75
-}
-
-func Confidence(a, b Wine) float64 {
-	d := WineSimilarity(a, b)
+func Similarity(a, b Wine) float64 {
+	nameSim := mongeElkanSimilarity(stripYearAndProducerWords(a), stripYearAndProducerWords(b))
+	producerSim := mongeElkanSimilarity(a.Producer, b.Producer)
 
 	const (
 		wProducer = 0.5
 		wName     = 0.5
 	)
 
-	c := d.Producer*wProducer + d.Name*wName
+	c := producerSim*wProducer + nameSim*wName
 
 	if false {
 		log.Printf(`DEBUG: Confidence match
@@ -58,13 +43,17 @@ func Confidence(a, b Wine) float64 {
 	  Final Confidence: %.2f
 	`,
 			a.Name, b.Name,
-			d.Name, stripYearAndProducerWords(a), stripYearAndProducerWords(b),
-			d.Producer, a.Producer, b.Producer,
+			nameSim, stripYearAndProducerWords(a), stripYearAndProducerWords(b),
+			producerSim, a.Producer, b.Producer,
 			c,
 		)
 	}
 
 	return c
+}
+
+func HighEnough(c float64) bool {
+	return c > 0.75
 }
 
 func Normalize(s string) string {

@@ -1,7 +1,6 @@
 package levenshtein
 
 import (
-	"strings"
 	"unicode/utf8"
 )
 
@@ -11,7 +10,7 @@ import (
 const minLengthThreshold = 32
 
 func NormalizedDistance(a, b string) float64 {
-	distance := ComputeDistance(strings.ToLower(a), strings.ToLower(b))
+	distance := ComputeDistance(a, b)
 	maxLen := max(utf8.RuneCountInString(a), utf8.RuneCountInString(b))
 
 	if maxLen == 0 {

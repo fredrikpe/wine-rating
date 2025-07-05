@@ -1,11 +1,11 @@
-package match
+package similarity
 
 import (
 	"testing"
 )
 
-func TestConfidenceGalwayOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityGalwayOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Galway Vintage Shiraz",
 			Producer: "Yalumba",
@@ -21,8 +21,8 @@ func TestConfidenceGalwayOk(t *testing.T) {
 	}
 }
 
-func TestConfidencePironOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityPironOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Montagne Saint-Émilion",
 			Producer: "Château Piron",
@@ -38,8 +38,8 @@ func TestConfidencePironOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceFaiveley(t *testing.T) {
-	c := Confidence(
+func TestSimilarityFaiveley(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Bourgogne Chardonnay",
 			Producer: "Domaine Faiveley",
@@ -55,8 +55,8 @@ func TestConfidenceFaiveley(t *testing.T) {
 	}
 }
 
-func TestConfidenceGardiesOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityGardiesOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Mas Las Cabes Blanc",
 			Producer: "Gardiés",
@@ -72,8 +72,8 @@ func TestConfidenceGardiesOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceSemeliOk(t *testing.T) {
-	c := Confidence(
+func TestSimilaritySemeliOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Mantinia Moschofilero",
 			Producer: "Seméli",
@@ -89,8 +89,8 @@ func TestConfidenceSemeliOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceZafeirakisOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityZafeirakisOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Limniona Young Vineyards",
 			Producer: "Κτήμα Ζαφειράκη (Domaine Zafeirakis)",
@@ -106,8 +106,8 @@ func TestConfidenceZafeirakisOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Nebbiolo Langhe",
 			Producer: "Viberti Giovanni",
@@ -123,8 +123,8 @@ func TestConfidenceOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceDemiereOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityDemiereOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Lysandre Cuvée",
 			Producer: "Champagne Demière",
@@ -140,8 +140,8 @@ func TestConfidenceDemiereOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceSimpsonsOk(t *testing.T) {
-	c := Confidence(
+func TestSimilaritySimpsonsOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Chalklands Classic Cuvée",
 			Producer: "Simpsons",
@@ -157,8 +157,8 @@ func TestConfidenceSimpsonsOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceOlimBaudaOk(t *testing.T) {
-	c := Confidence(
+func TestSimilarityOlimBaudaOk(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Centive Moscato d'Asti",
 			Producer: "Olim Bauda",
@@ -174,8 +174,8 @@ func TestConfidenceOlimBaudaOk(t *testing.T) {
 	}
 }
 
-func TestConfidenceGardWrong(t *testing.T) {
-	c := Confidence(
+func TestSimilarityGardWrong(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Bourgogne Pinot Noir",
 			Producer: "Olivier Gard",
@@ -191,8 +191,8 @@ func TestConfidenceGardWrong(t *testing.T) {
 	}
 }
 
-func TestConfidenceRexHillWrong(t *testing.T) {
-	c := Confidence(
+func TestSimilarityRexHillWrong(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Sunny Mountain Vineyard Pinot noir",
 			Producer: "Rex Hill",
@@ -208,8 +208,8 @@ func TestConfidenceRexHillWrong(t *testing.T) {
 	}
 }
 
-func TestConfidenceValdesayWrong(t *testing.T) {
-	c := Confidence(
+func TestSimilarityValdesayWrong(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Bourgogne Chardonnay",
 			Producer: "Maison Valdesay",
@@ -225,8 +225,8 @@ func TestConfidenceValdesayWrong(t *testing.T) {
 	}
 }
 
-func TestConfidenceBrialWrong(t *testing.T) {
-	c := Confidence(
+func TestSimilarityBrialWrong(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Les Camines Blanc",
 			Producer: "Dom Brial",
@@ -242,8 +242,8 @@ func TestConfidenceBrialWrong(t *testing.T) {
 	}
 }
 
-func TestConfidenceTroupisWrong(t *testing.T) {
-	c := Confidence(
+func TestSimilarityTroupisWrong(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Moschofilero",
 			Producer: "Troupis Winery",
@@ -259,8 +259,8 @@ func TestConfidenceTroupisWrong(t *testing.T) {
 	}
 }
 
-func TestConfidenceBarcelonaWrong(t *testing.T) {
-	c := Confidence(
+func TestSimilarityBarcelonaWrong(t *testing.T) {
+	c := Similarity(
 		Wine{
 			Name:     "Cava Brut",
 			Producer: "FC Barcelona",

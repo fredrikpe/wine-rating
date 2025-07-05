@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"wine_rating/internal/db"
-	"wine_rating/internal/match"
+	"wine_rating/internal/similarity"
 )
 
 const RATINGS_COUNT_THRESHOLD = 75
@@ -15,7 +15,7 @@ type Match struct {
 	Url            string
 	ExactVintage   bool
 	RatingsAverage *float64
-	Confidence     float64
+	Similarity     float64
 }
 
 func FindMatch(store *db.Store, name, producer string, year *int) (Match, error) {
@@ -24,7 +24,7 @@ func FindMatch(store *db.Store, name, producer string, year *int) (Match, error)
 		return Match{}, fmt.Errorf("getVivinoHits failed: %w", err)
 	}
 
-	best, confidence := bestMatch(wines, match.Wine{
+	best, confidence := bestMatch(wines, similarity.Wine{
 		Name:     name,
 		Producer: producer,
 	})
@@ -49,7 +49,7 @@ func FindMatch(store *db.Store, name, producer string, year *int) (Match, error)
 		Url:            Url(best.Id),
 		ExactVintage:   exactVintage,
 		RatingsAverage: ratingsAverage,
-		Confidence:     confidence,
+		Similarity:     confidence,
 	}, nil
 }
 
@@ -110,12 +110,12 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 	return wine
 }
 
-func bestMatch(hits []db.VivinoWineDbo, wine match.Wine) (db.VivinoWineDbo, float64) {
+func bestMatch(hits []db.VivinoWineDbo, wine similarity.Wine) (db.VivinoWineDbo, float64) {
 	var best db.VivinoWineDbo
 	confidence := 0.0
 	for _, hit := range hits {
-		c := match.Confidence(
-			match.Wine{
+		c := similarity.Similarity(
+			similarity.Wine{
 				Name:     hit.Name,
 				Producer: hit.Producer,
 				Region:   hit.Region,
@@ -132,5 +132,5 @@ func bestMatch(hits []db.VivinoWineDbo, wine match.Wine) (db.VivinoWineDbo, floa
 }
 
 func normalizeQuery(name, producer string) string {
-	return strings.Join(match.SortedUnique(match.Normalize(name+" "+producer)), " ")
+	return strings.Join(similarity.SortedUnique(similarity.Normalize(name+" "+producer)), " ")
 }
