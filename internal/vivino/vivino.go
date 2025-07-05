@@ -3,7 +3,6 @@ package vivino
 import (
 	"fmt"
 	"log"
-	"sort"
 	"strings"
 	"wine_rating/internal/match"
 )
@@ -58,16 +57,5 @@ func bestMatch(hits []VivinoHit, wine match.Wine) (VivinoHit, match.Distance) {
 }
 
 func normalizeQuery(name, producer string) string {
-	seen := make(map[string]bool)
-	var tokens []string
-
-	for word := range strings.FieldsSeq(strings.ToLower(name + " " + producer)) {
-		if !seen[word] {
-			seen[word] = true
-			tokens = append(tokens, word)
-		}
-	}
-
-	sort.Strings(tokens)
-	return strings.Join(tokens, " ")
+	return strings.Join(match.SortedUnique(match.Normalize(name+" "+producer)), " ")
 }
