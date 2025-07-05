@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 	"wine_rating/internal/db"
 	"wine_rating/internal/similarity"
 )
@@ -58,11 +59,11 @@ func Url(id int) string {
 }
 
 func getVivinoHits(db *db.Store, query string) ([]db.VivinoWineDbo, error) {
-	wines, _, err := db.GetVivinoQuery(query)
+	wines, updatedAt, err := db.GetVivinoQuery(query)
 	if err != nil {
 		return nil, fmt.Errorf("get query failed: %w", err)
 	}
-	if len(wines) > 0 {
+	if len(wines) > 0 && updatedAt.Before(time.Now().AddDate(0, 0, -30)) {
 		log.Println("Returning wines from db")
 		return wines, nil
 	}

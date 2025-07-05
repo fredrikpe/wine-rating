@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"wine_rating/internal/db"
+	"wine_rating/internal/similarity"
 	"wine_rating/internal/vivino"
 
 	"github.com/xuri/excelize/v2"
@@ -80,9 +81,12 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 		return fmt.Errorf("find match: %w", err)
 	}
 
-	// Write to Excel
 	cell := func(col string) string {
 		return fmt.Sprintf("%s%d", col, rowNum)
+	}
+
+	if !similarity.HighEnough(match.Similarity) {
+		return nil
 	}
 
 	if match.RatingsAverage != nil {
