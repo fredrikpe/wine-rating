@@ -58,6 +58,7 @@ func TestInsertAndGetVivinoQuery(t *testing.T) {
 	require.NotEmpty(t, updatedAt)
 	require.Len(t, got, 1)
 	require.Equal(t, wine.Id, got[0].Id)
+	require.Equal(t, wine.Statistics, got[0].Statistics)
 	require.Equal(t, wine.Name, got[0].Name)
 	require.Equal(t, "2020", got[0].Vintages[0].Year)
 	require.Equal(t, 4.2, got[0].Vintages[0].Statistics.RatingsAverage)

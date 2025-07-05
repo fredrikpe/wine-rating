@@ -2,6 +2,7 @@ package match
 
 import (
 	"log"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
@@ -10,6 +11,8 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+var yearRegex = regexp.MustCompile(`\b\d{4}\b`)
+
 type Wine struct {
 	Name     string
 	Producer string
@@ -17,60 +20,49 @@ type Wine struct {
 	Region   string
 }
 
-type Distance struct {
+type Similarity struct {
 	Name     float64
 	Producer float64
-	Country  float64
-	Region   float64
 }
 
-func WineDistance(a, b Wine) Distance {
-	return Distance{
-		Name:     jaccardLevDistance(a.Name, b.Name),
-		Producer: jaccardLevDistance(a.Producer, b.Producer),
-		Region:   jaccardLevDistance(a.Region, b.Region),
-		Country:  jaccardLevDistance(a.Country, b.Country),
+func WineSimilarity(a, b Wine) Similarity {
+	return Similarity{
+		Name:     mongeElkanSimilarity(stripYearAndProducerWords(a), stripYearAndProducerWords(b)),
+		Producer: mongeElkanSimilarity(a.Producer, b.Producer),
 	}
 }
 
-func Confidence(a, b Wine) float64 {
-	d := WineDistance(a, b)
+func HighEnough(c float64) bool {
+	return c > 0.75
+}
 
-	nameSim := 1 - d.Name
-	producerSim := 1 - d.Producer
-	regionSim := 1 - d.Region
-	countrySim := 1 - d.Country
+func Confidence(a, b Wine) float64 {
+	d := WineSimilarity(a, b)
 
 	const (
-		wProducer = 0.50
-		wName     = 0.3
-		wRegion   = 0.05
-		wCountry  = 0.15
+		wProducer = 0.5
+		wName     = 0.5
 	)
 
-	c := producerSim*wProducer +
-		nameSim*wName +
-		regionSim*wRegion +
-		countrySim*wCountry
-	log.Printf(`DEBUG: Confidence match
+	c := d.Producer*wProducer + d.Name*wName
+
+	if true {
+		log.Printf(`DEBUG: Confidence match
 	  Wine A: %-30s
 	  Wine B: %-30s
 
 	  Distances:
 	    Name:     %.2f (%s ↔ %s)
 	    Producer: %.2f (%s ↔ %s)
-	    Region:   %.2f (%s ↔ %s)
-	    Country:  %.2f (%s ↔ %s)
 
 	  Final Confidence: %.2f
 	`,
-		a.Name, b.Name,
-		d.Name, a.Name, b.Name,
-		d.Producer, a.Producer, b.Producer,
-		d.Region, a.Region, b.Region,
-		d.Country, a.Country, b.Country,
-		c,
-	)
+			a.Name, b.Name,
+			d.Name, stripYearAndProducerWords(a), stripYearAndProducerWords(b),
+			d.Producer, a.Producer, b.Producer,
+			c,
+		)
+	}
 
 	return c
 }
@@ -94,44 +86,31 @@ func SortedUnique(s string) []string {
 	return tokens
 }
 
-func jaccardLevDistance(a, b string) float64 {
-	ca := removeDiacritics(strings.ToLower(a))
-	cb := removeDiacritics(strings.ToLower(b))
-
-	jaccard := jaccardSimilarity(SortedUnique(ca), SortedUnique(cb))
-	lev := levenshtein.NormalizedDistance(ca, cb)
-
-	return 0.7*(1-jaccard) + 0.3*lev
+func mongeElkanSimilarity(a, b string) float64 {
+	simAB := mongeElkanSimilarityOneWay(a, b)
+	simBA := mongeElkanSimilarityOneWay(b, a)
+	return (simAB + simBA) / 2
 }
 
-func jaccardSimilarity(a, b []string) float64 {
-	setA := make(map[string]struct{})
-	setB := make(map[string]struct{})
+func mongeElkanSimilarityOneWay(a, b string) float64 {
+	toksA := strings.Fields(removeDiacritics(strings.ToLower(a)))
+	toksB := strings.Fields(removeDiacritics(strings.ToLower(b)))
 
-	for _, token := range a {
-		setA[token] = struct{}{}
-	}
-	for _, token := range b {
-		setB[token] = struct{}{}
-	}
-
-	intersection := 0
-	union := make(map[string]struct{})
-
-	for token := range setA {
-		union[token] = struct{}{}
-		if _, ok := setB[token]; ok {
-			intersection++
+	var total float64
+	for _, tokA := range toksA {
+		maxSim := 0.0
+		for _, tokB := range toksB {
+			sim := 1.0 - levenshtein.NormalizedDistance(tokA, tokB)
+			if sim > maxSim {
+				maxSim = sim
+			}
 		}
+		total += maxSim
 	}
-	for token := range setB {
-		union[token] = struct{}{}
-	}
-
-	if len(union) == 0 {
+	if len(toksA) == 0 {
 		return 0.0
 	}
-	return float64(intersection) / float64(len(union))
+	return total / float64(len(toksA))
 }
 
 func removeDiacritics(input string) string {
@@ -147,4 +126,21 @@ func removeDiacritics(input string) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+func stripYearAndProducerWords(w Wine) string {
+	name := strings.ToLower(w.Name)
+	producer := strings.ToLower(w.Producer)
+
+	// Remove 4-digit year
+	name = yearRegex.ReplaceAllString(name, "")
+
+	// Remove producer words
+	prodWords := strings.FieldsSeq(producer)
+	for word := range prodWords {
+		name = strings.ReplaceAll(name, word, "")
+	}
+
+	// Normalize spacing
+	return strings.Join(strings.Fields(name), " ")
 }

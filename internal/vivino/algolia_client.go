@@ -69,16 +69,18 @@ func algoliaSearch(query string) ([]VivinoHit, error) {
 		return nil, fmt.Errorf("vivino returned %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
 	}
 
-	var result algoliaResponse
-	json.NewDecoder(resp.Body).Decode(&result)
+	hits, err := decodeVivinoResponse(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("decoding vivino response: %w", err)
+	}
 
-	return result.Hits, nil
+	return hits, nil
 }
 
 func decodeVivinoResponse(r io.Reader) ([]VivinoHit, error) {
 	var result algoliaResponse
 	if err := json.NewDecoder(r).Decode(&result); err != nil {
-		return nil, fmt.Errorf("decoding vivino response: %w", err)
+		return nil, err
 	}
 	return result.Hits, nil
 }

@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"wine_rating/internal/db"
@@ -49,14 +48,17 @@ func EnrichHandler(db *db.Store) http.HandlerFunc {
 			name := row[columnIndexes.NameCol]
 			producer := row[columnIndexes.ProducerCol]
 			vintage := vexcel.ResolveVintage(row, columnIndexes.VintageCol, name)
-			log.Print("Name", name)
 
 			match, err := vivino.FindMatch(db, name, producer, vintage)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("error: %v", err), http.StatusInternalServerError)
 				return
 			}
-			excel.SetCellValue(sheetName, fmt.Sprintf("%s%d", col1Name, i+2), match.RatingsAverage)
+			if match.RatingsAverage != nil {
+				excel.SetCellValue(sheetName, fmt.Sprintf("%s%d", col1Name, i+2), *match.RatingsAverage)
+			} else {
+				excel.SetCellValue(sheetName, fmt.Sprintf("%s%d", col1Name, i+2), "n/a")
+			}
 			excel.SetCellValue(sheetName, fmt.Sprintf("%s%d", col2Name, i+2), vivino.Url(match.Id))
 			excel.SetCellValue(sheetName, fmt.Sprintf("%s%d", col3Name, i+2), match.Confidence)
 		}

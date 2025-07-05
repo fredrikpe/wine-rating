@@ -9,10 +9,12 @@ import (
 	"wine_rating/internal/match"
 )
 
+const RATINGS_COUNT_THRESHOLD = 75
+
 type Match struct {
 	Id             int
 	ExactVintage   bool
-	RatingsAverage float64
+	RatingsAverage *float64
 	Confidence     float64
 }
 
@@ -32,21 +34,21 @@ func FindMatch(store *db.Store, name, producer string, year *int) (Match, error)
 
 	if year != nil {
 		for _, vintage := range best.Vintages {
-			if strconv.Itoa(*year) == vintage.Year {
+			if strconv.Itoa(*year) == vintage.Year && vintage.Statistics.RatingsCount > RATINGS_COUNT_THRESHOLD {
 				ratingsAverage = &vintage.Statistics.RatingsAverage
 				exactVintage = true
 				break
 			}
 		}
 	}
-	if ratingsAverage == nil {
+	if ratingsAverage == nil && best.Statistics.RatingsCount > RATINGS_COUNT_THRESHOLD {
 		ratingsAverage = &best.Statistics.RatingsAverage
 	}
 
 	return Match{
 		Id:             best.Id,
 		ExactVintage:   exactVintage,
-		RatingsAverage: *ratingsAverage,
+		RatingsAverage: ratingsAverage,
 		Confidence:     confidence,
 	}, nil
 }
@@ -88,11 +90,12 @@ func hitsToDbos(hits []VivinoHit) []db.VivinoWineDbo {
 
 func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 	wine := db.VivinoWineDbo{
-		Id:       hit.Id,
-		Name:     hit.Name,
-		Producer: hit.Winery.Name,
-		Region:   hit.Winery.Region.Name,
-		Country:  hit.Winery.Region.Country,
+		Id:         hit.Id,
+		Name:       hit.Name,
+		Producer:   hit.Winery.Name,
+		Region:     hit.Winery.Region.Name,
+		Country:    hit.Winery.Region.Country,
+		Statistics: db.WineStatsDbo(hit.Statistics),
 	}
 
 	for _, v := range hit.Vintages {
@@ -100,12 +103,7 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 			Id:           v.Id,
 			VivinoWineId: hit.Id,
 			Year:         v.Year,
-			Statistics: db.VintageStatsDbo{
-				RatingsAverage: v.Statistics.RatingsAverage,
-				RatingsCount:   v.Statistics.RatingsCount,
-				ReviewsCount:   v.Statistics.ReviewsCount,
-				LabelsCount:    v.Statistics.LabelsCount,
-			},
+			Statistics:   db.VintageStatsDbo(v.Statistics),
 		})
 	}
 
