@@ -1,6 +1,7 @@
 package vivino
 
 import (
+	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"wine_rating/internal/match"
@@ -13,10 +14,11 @@ func TestDecodeVivinoResponseFromFile(t *testing.T) {
 	}
 	defer f.Close()
 
-	_, err = decodeVivinoResponse(f)
+	hits, err := decodeVivinoResponse(f)
 	if err != nil {
 		t.Fatalf("unexpected decode error: %v", err)
 	}
+	require.Equal(t, 3.7, hits[0].Statistics.RatingsAverage)
 }
 
 func TestFindRightTommasiValpolicella(t *testing.T) {

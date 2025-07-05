@@ -3,7 +3,13 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"time"
+
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/source/file"
 )
 
 type Store struct {
@@ -15,22 +21,55 @@ func NewDb(db *sql.DB) *Store {
 }
 
 type VivinoWineDbo struct {
-	Id       int
-	Name     string
-	Producer string
-	Region   string
-	Country  string
-	Vintages []VivinoVintageDbo
+	Id         int
+	Name       string
+	Producer   string
+	Region     string
+	Country    string
+	Vintages   []VivinoVintageDbo
+	Statistics WineStatsDbo
 }
 
 type VivinoVintageDbo struct {
-	Id             int
-	VivinoWineId   int
-	Year           string
+	Id           int
+	VivinoWineId int
+	Year         string
+	Statistics   VintageStatsDbo
+}
+
+type WineStatsDbo struct {
+	RatingsAverage float64
+	RatingsCount   int
+	LabelsCount    int
+}
+
+type VintageStatsDbo struct {
 	RatingsAverage float64
 	RatingsCount   int
 	ReviewsCount   int
 	LabelsCount    int
+}
+
+func RunMigrations(db *sql.DB) error {
+	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		fmt.Sprintf("file://%s", getMigrationPath()),
+		"sqlite3", driver,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
 }
 
 func (store *Store) UpsertQuery(query string, hits []VivinoWineDbo) error {
@@ -42,15 +81,18 @@ func (store *Store) UpsertQuery(query string, hits []VivinoWineDbo) error {
 
 	for _, hit := range hits {
 		_, err := tx.Exec(`
-			INSERT INTO vivino_wine (id, name, producer, region, country, updated_at)
-			VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			INSERT INTO vivino_wine (id, name, producer, region, country, ratings_count, ratings_average, labels_count, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 			ON CONFLICT(id) DO UPDATE SET
 				name = excluded.name,
 				producer = excluded.producer,
 				region = excluded.region,
 				country = excluded.country,
+				ratings_count = excluded.ratings_count,
+				ratings_average = excluded.ratings_average,
+				labels_count = excluded.labels_count,
 				updated_at = excluded.updated_at
-		`, hit.Id, hit.Name, hit.Producer, hit.Region, hit.Country)
+		`, hit.Id, hit.Name, hit.Producer, hit.Region, hit.Country, hit.Statistics.RatingsCount, hit.Statistics.RatingsAverage, hit.Statistics.LabelsCount)
 
 		if err != nil {
 			return fmt.Errorf("upsert vivino_wine: %w", err)
@@ -102,7 +144,7 @@ func UpsertVivinoVintage(tx *sql.Tx, v VivinoVintageDbo) error {
 			ratings_count = excluded.ratings_count,
 			reviews_count = excluded.reviews_count,
 			labels_count = excluded.labels_count
-	`, v.Id, v.VivinoWineId, v.Year, v.RatingsAverage, v.RatingsCount, v.ReviewsCount, v.LabelsCount)
+	`, v.Id, v.VivinoWineId, v.Year, v.Statistics.RatingsAverage, v.Statistics.RatingsCount, v.Statistics.ReviewsCount, v.Statistics.LabelsCount)
 	if err != nil {
 		return fmt.Errorf("insert vivino_vintage: %w", err)
 	}
@@ -128,7 +170,7 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 	}
 
 	rows, err := store.Db.Query(`
-		SELECT w.id, w.name, w.producer, w.region, w.country
+		SELECT w.id, w.name, w.producer, w.region, w.country, w.ratings_count, w.ratings_average, w.labels_count
 		FROM vivino_query_hit qh
 		JOIN vivino_query q ON q.id = qh.vivino_query_id
 		JOIN vivino_wine w ON w.id = qh.vivino_wine_id
@@ -143,7 +185,17 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 
 	for rows.Next() {
 		var wine VivinoWineDbo
-		if err := rows.Scan(&wine.Id, &wine.Name, &wine.Producer, &wine.Region, &wine.Country); err != nil {
+		err = rows.Scan(
+			&wine.Id,
+			&wine.Name,
+			&wine.Producer,
+			&wine.Region,
+			&wine.Country,
+			&wine.Statistics.RatingsCount,
+			&wine.Statistics.RatingsAverage,
+			&wine.Statistics.LabelsCount,
+		)
+		if err != nil {
 			return nil, time.Time{}, fmt.Errorf("scan wine: %w", err)
 		}
 
@@ -160,7 +212,14 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 		var vintages []VivinoVintageDbo
 		for vintageRows.Next() {
 			var v VivinoVintageDbo
-			if err := vintageRows.Scan(&v.Id, &v.VivinoWineId, &v.Year, &v.RatingsAverage, &v.RatingsCount, &v.ReviewsCount, &v.LabelsCount); err != nil {
+			err = vintageRows.Scan(
+				&v.Id,
+				&v.VivinoWineId,
+				&v.Year,
+				&v.Statistics.RatingsAverage,
+				&v.Statistics.RatingsCount, &v.Statistics.ReviewsCount, &v.Statistics.LabelsCount,
+			)
+			if err != nil {
 				vintageRows.Close()
 				return nil, time.Time{}, fmt.Errorf("scan vintage: %w", err)
 			}
@@ -177,4 +236,9 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 	}
 
 	return wines, updatedAt, nil
+}
+
+func getMigrationPath() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "../../db/migrations")
 }

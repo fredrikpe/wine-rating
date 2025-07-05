@@ -52,8 +52,7 @@ func Confidence(a, b Wine) float64 {
 		nameSim*wName +
 		regionSim*wRegion +
 		countrySim*wCountry
-	if false {
-		log.Printf(`DEBUG: Confidence match
+	log.Printf(`DEBUG: Confidence match
 	  Wine A: %-30s
 	  Wine B: %-30s
 
@@ -65,14 +64,13 @@ func Confidence(a, b Wine) float64 {
 
 	  Final Confidence: %.2f
 	`,
-			a.Name, b.Name,
-			d.Name, a.Name, b.Name,
-			d.Producer, a.Producer, b.Producer,
-			d.Region, a.Region, b.Region,
-			d.Country, a.Country, b.Country,
-			c,
-		)
-	}
+		a.Name, b.Name,
+		d.Name, a.Name, b.Name,
+		d.Producer, a.Producer, b.Producer,
+		d.Region, a.Region, b.Region,
+		d.Country, a.Country, b.Country,
+		c,
+	)
 
 	return c
 }

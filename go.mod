@@ -2,9 +2,17 @@ module wine_rating
 
 go 1.24
 
-require github.com/xuri/excelize/v2 v2.6.1
+require (
+	github.com/stretchr/testify v1.7.1
+	github.com/xuri/excelize/v2 v2.6.1
+)
 
-require github.com/mattn/go-sqlite3 v1.14.28 // indirect
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
+)
 
 require (
 	github.com/golang-migrate/migrate v3.5.4+incompatible

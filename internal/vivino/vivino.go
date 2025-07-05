@@ -27,28 +27,26 @@ func FindMatch(store *db.Store, name, producer string, year *int) (Match, error)
 		Producer: producer,
 	})
 
-	var match *db.VivinoVintageDbo
+	var ratingsAverage *float64
 	exactVintage := false
 
-	for _, vintage := range best.Vintages {
-		if year != nil && strconv.Itoa(*year) == vintage.Year {
-			match = &vintage
-			exactVintage = true
-			break
-		}
-		if year == nil && vintage.Year == "" {
-			match = &vintage
-			break
+	if year != nil {
+		for _, vintage := range best.Vintages {
+			if strconv.Itoa(*year) == vintage.Year {
+				ratingsAverage = &vintage.Statistics.RatingsAverage
+				exactVintage = true
+				break
+			}
 		}
 	}
-	if match == nil {
-		return Match{}, fmt.Errorf("match was nil: %+v %w", best, err)
+	if ratingsAverage == nil {
+		ratingsAverage = &best.Statistics.RatingsAverage
 	}
 
 	return Match{
 		Id:             best.Id,
 		ExactVintage:   exactVintage,
-		RatingsAverage: match.RatingsAverage,
+		RatingsAverage: *ratingsAverage,
 		Confidence:     confidence,
 	}, nil
 }
@@ -99,13 +97,15 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 
 	for _, v := range hit.Vintages {
 		wine.Vintages = append(wine.Vintages, db.VivinoVintageDbo{
-			Id:             v.Id,
-			VivinoWineId:   hit.Id,
-			Year:           v.Year,
-			RatingsAverage: v.Statistics.RatingsAverage,
-			RatingsCount:   v.Statistics.RatingsCount,
-			ReviewsCount:   0,
-			LabelsCount:    v.Statistics.LabelsCount,
+			Id:           v.Id,
+			VivinoWineId: hit.Id,
+			Year:         v.Year,
+			Statistics: db.VintageStatsDbo{
+				RatingsAverage: v.Statistics.RatingsAverage,
+				RatingsCount:   v.Statistics.RatingsCount,
+				ReviewsCount:   v.Statistics.ReviewsCount,
+				LabelsCount:    v.Statistics.LabelsCount,
+			},
 		})
 	}
 

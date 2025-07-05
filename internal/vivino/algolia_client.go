@@ -24,16 +24,23 @@ type VivinoHit struct {
 		} `json:"region"`
 	} `json:"winery"`
 	Vintages []struct {
-		Id         int        `json:"id"`
-		Year       string     `json:"year"`
-		Statistics Statistics `json:"statistics"`
+		Id         int          `json:"id"`
+		Year       string       `json:"year"`
+		Statistics VintageStats `json:"statistics"`
 	} `json:"vintages"`
-	Statistics Statistics `json:"statistics"`
+	Statistics WineStats `json:"statistics"`
 }
 
-type Statistics struct {
+type WineStats struct {
 	RatingsAverage float64 `json:"ratings_average"`
 	RatingsCount   int     `json:"ratings_count"`
+	LabelsCount    int     `json:"labels_count"`
+}
+
+type VintageStats struct {
+	RatingsAverage float64 `json:"ratings_average"`
+	RatingsCount   int     `json:"ratings_count"`
+	ReviewsCount   int     `json:"reviews_count"`
 	LabelsCount    int     `json:"labels_count"`
 }
 
