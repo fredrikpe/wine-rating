@@ -17,7 +17,7 @@ import (
 type OutputColumns struct {
 	RatingCol string
 	URLCol    string
-	ConfCol   string
+	SimCol    string
 }
 
 func readUploadedExcel(r *http.Request) (*excelize.File, error) {
@@ -59,7 +59,7 @@ func enrichExcelWithVivino(db *db.Store, excel *excelize.File) error {
 	outColumns := OutputColumns{
 		RatingCol: col1Name,
 		URLCol:    col2Name,
-		ConfCol:   col3Name,
+		SimCol:    col3Name,
 	}
 
 	columnIndexes, err := findColumnIndexes(excel)
@@ -78,13 +78,9 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 	name := row[columnIndexes.NameCol]
 	producer := row[columnIndexes.ProducerCol]
 	vintage := resolveVintage(row, columnIndexes.VintageCol, name)
-	req := MatchRequest{
-		Name:     name,
-		Producer: producer,
-		Year:     vintage,
-	}
+	query := toQuery(name, producer, vintage)
 
-	match, err := vivino.FindMatch(db, req.toQuery())
+	match, err := vivino.FindMatch(db, query)
 	if err != nil {
 		return fmt.Errorf("find match: %w", err)
 	}
@@ -93,7 +89,7 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 		return fmt.Sprintf("%s%d", col, rowNum)
 	}
 
-	if !vivino.HighEnough(match.Similarity) {
+	if !vivino.QuiteCertain(match.Similarity) {
 		return nil
 	}
 
@@ -104,7 +100,7 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 	}
 
 	_ = excel.SetCellValue(sheetName, cell(outCols.URLCol), match.Url)
-	_ = excel.SetCellValue(sheetName, cell(outCols.ConfCol), fmt.Sprintf("%.2f", match.Similarity))
+	_ = excel.SetCellValue(sheetName, cell(outCols.SimCol), fmt.Sprintf("%.2f", match.Similarity))
 
 	return nil
 }
@@ -198,4 +194,13 @@ func extractYear(text string) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+func toQuery(name, producer string, year *int) string {
+	var queryParts []string
+	if year != nil {
+		queryParts = append(queryParts, strconv.Itoa(*year))
+	}
+	queryParts = append(queryParts, name, producer)
+	return strings.Join(queryParts, " ")
 }

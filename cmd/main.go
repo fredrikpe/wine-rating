@@ -28,6 +28,7 @@ func main() {
 
 	http.Handle("/enrich", web.WithCORS(http.HandlerFunc(web.EnrichHandler(db))))
 	http.Handle("/match", web.WithCORS(http.HandlerFunc(web.MatchHandler(db))))
+	http.Handle("/match/batch", web.WithCORS(http.HandlerFunc(web.MatchBatchHandler(db))))
 
 	log.Println("Server started on :8080")
 	_ = http.ListenAndServe(":8080", nil)

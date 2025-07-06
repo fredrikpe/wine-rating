@@ -16,7 +16,7 @@ func TestSimilarityGalwayOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -33,7 +33,7 @@ func TestSimilarityPironOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -50,7 +50,7 @@ func TestSimilarityFaiveley(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -67,7 +67,7 @@ func TestSimilarityGardiesOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -84,7 +84,7 @@ func TestSimilaritySemeliOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -101,7 +101,7 @@ func TestSimilarityZafeirakisOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -118,7 +118,7 @@ func TestSimilarityVibertiOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -135,7 +135,7 @@ func TestSimilarityDemiereOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -152,7 +152,7 @@ func TestSimilaritySimpsonsOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -169,7 +169,7 @@ func TestSimilarityOlimBaudaOk(t *testing.T) {
 		},
 	)
 
-	if !HighEnough(c) {
+	if !QuiteCertain(c) {
 		t.Fatalf("confidence too low")
 	}
 }
@@ -186,7 +186,7 @@ func TestSimilarityGardWrong(t *testing.T) {
 		},
 	)
 
-	if HighEnough(c) {
+	if QuiteCertain(c) {
 		t.Fatalf("confidence too high")
 	}
 }
@@ -203,7 +203,7 @@ func TestSimilarityRexHillWrong(t *testing.T) {
 		},
 	)
 
-	if HighEnough(c) {
+	if QuiteCertain(c) {
 		t.Fatalf("confidence too high")
 	}
 }
@@ -220,7 +220,7 @@ func TestSimilarityValdesayWrong(t *testing.T) {
 		},
 	)
 
-	if HighEnough(c) {
+	if QuiteCertain(c) {
 		t.Fatalf("confidence too high")
 	}
 }
@@ -237,7 +237,7 @@ func TestSimilarityBrialWrong(t *testing.T) {
 		},
 	)
 
-	if HighEnough(c) {
+	if QuiteCertain(c) {
 		t.Fatalf("confidence too high")
 	}
 }
@@ -254,7 +254,7 @@ func TestSimilarityTroupisWrong(t *testing.T) {
 		},
 	)
 
-	if HighEnough(c) {
+	if QuiteCertain(c) {
 		t.Fatalf("confidence too high")
 	}
 }
@@ -266,46 +266,11 @@ func TestSimilarityBarcelonaWrong(t *testing.T) {
 			Producer: "FC Barcelona",
 		},
 		NameProducer{
-			Name:     "Hola! Cava Brut ",
-			Producer: "Barcelona Brands",
+			Name: "Hola! Cava Brut Barcelona Brands",
 		},
 	)
 
-	if HighEnough(c) {
+	if QuiteCertain(c) {
 		t.Fatalf("confidence too high")
 	}
 }
-
-//2025/07/06 08:28:49 galway 0.9107142857142857
-//2025/07/06 08:28:49 piron 0.798731884057971
-//2025/07/06 08:28:49 faivel 0.9215686274509803
-//2025/07/06 08:28:49 gardies 0.8159722222222221
-//2025/07/06 08:28:49 semeli 0.7555555555555555
-//2025/07/06 08:28:49 zafei 0.6787280701754386
-//2025/07/06 08:28:49 veberti 0.6658119658119658
-////2025/07/06 08:28:49 demiere 0.7401960784313726
-//2025/07/06 08:28:49 simpsom 0.7307692307692307
-//2025/07/06 08:28:49 olim 0.7681818181818182
-//2025/07/06 08:28:49 gard 0.4875801282051282
-//2025/07/06 08:28:49 rex 0.49722222222222223
-//2025/07/06 08:28:49 valdesay 0.560515873015873
-//2025/07/06 08:28:49 brial 0.5997023809523809
-//2025/07/06 08:28:49 troupis 0.6622807017543859
-//2025/07/06 08:28:49 FC b 0.6243589743589744
-
-//2025/07/06 08:29:52 galway 0.875
-//2025/07/06 08:29:52 piron 0.7946428571428572
-//2025/07/06 08:29:52 faivel 0.8571428571428572
-//2025/07/06 08:29:52 gardies 0.8
-//2025/07/06 08:29:52 semeli 0.7916666666666667
-//2025/07/06 08:29:52 zafei 0.790340909090909
-//2025/07/06 08:29:52 veberti 1
-//2025/07/06 08:29:52 demiere 0.890625
-//2025/07/06 08:29:52 simpsom 0.8041666666666667
-//2025/07/06 08:29:52 olim 0.9166666666666666
-//2025/07/06 08:29:52 gard 0.49661044973544977
-//2025/07/06 08:29:52 rex 0.41138888888888886
-//2025/07/06 08:29:52 valdesay 0.5543402777777777
-//2025/07/06 08:29:52 brial 0.6771825396825397
-//2025/07/06 08:29:52 troupis 0.659970238095238
-//2025/07/06 08:29:52 FC b 0.7250000000000001

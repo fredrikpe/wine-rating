@@ -18,10 +18,10 @@ import (
 const RATINGS_COUNT_THRESHOLD = 75
 
 type Match struct {
-	Url            string
-	ExactVintage   bool
-	RatingsAverage *float64
-	Similarity     float64
+	Url            string   `json:"url"`
+	ExactVintage   bool     `json:"exact_vintage"`
+	RatingsAverage *float64 `json:"ratings_average,omitempty"`
+	Similarity     float64  `json:"similarity"`
 }
 
 func FindMatch(store *db.Store, query string) (Match, error) {
@@ -101,7 +101,6 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 		Country:    hit.Winery.Region.Country,
 		Statistics: db.WineStatsDbo(hit.Statistics),
 	}
-	log.Printf("%+v", wine)
 
 	for _, v := range hit.Vintages {
 		wine.Vintages = append(wine.Vintages, db.VivinoVintageDbo{
@@ -115,8 +114,12 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 	return wine
 }
 
-func HighEnough(c float64) bool {
-	return c > 0.75
+func Irrelevant(similarity float64) bool {
+	return similarity < 0.5
+}
+
+func QuiteCertain(similarity float64) bool {
+	return similarity > 0.75
 }
 
 type NameProducer struct {

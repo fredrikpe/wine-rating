@@ -10,9 +10,7 @@ func Similarity(a, b string) float64 {
 	sim := mongeElkanSimilarity(a, b)
 
 	if true {
-		log.Printf(`DEBUG: Similarity: %.2f (%s ↔ %s)`,
-			sim, a, b,
-		)
+		log.Printf(`DEBUG: Similarity: %.2f (%s ↔ %s)`, sim, a, b)
 	}
 
 	return sim
