@@ -29,7 +29,11 @@ func readUploadedExcel(r *http.Request) (*excelize.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Printf("failed to close file: %v", err)
+		}
+	}()
 
 	excel, err := excelize.OpenReader(file)
 	if err != nil {
@@ -94,13 +98,13 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 	}
 
 	if match.RatingsAverage != nil {
-		excel.SetCellValue(sheetName, cell(outCols.RatingCol), *match.RatingsAverage)
+		_ = excel.SetCellValue(sheetName, cell(outCols.RatingCol), *match.RatingsAverage)
 	} else {
-		excel.SetCellValue(sheetName, cell(outCols.RatingCol), "n/a")
+		_ = excel.SetCellValue(sheetName, cell(outCols.RatingCol), "n/a")
 	}
 
-	excel.SetCellValue(sheetName, cell(outCols.URLCol), match.Url)
-	excel.SetCellValue(sheetName, cell(outCols.ConfCol), fmt.Sprintf("%.2f", match.Similarity))
+	_ = excel.SetCellValue(sheetName, cell(outCols.URLCol), match.Url)
+	_ = excel.SetCellValue(sheetName, cell(outCols.ConfCol), fmt.Sprintf("%.2f", match.Similarity))
 
 	return nil
 }
@@ -109,17 +113,17 @@ func firstEmptyColumn(f *excelize.File) (int, error) {
 	sheetName := f.GetSheetName(0)
 	rows, err := f.GetRows(sheetName)
 	if err != nil || len(rows) == 0 {
-		return 0, fmt.Errorf("Failed to read rows or empty sheet %w", err)
+		return 0, fmt.Errorf("failed to read rows or empty sheet %w", err)
 	}
 	for col := 1; col < 1000; col++ {
 		colName, err := excelize.ColumnNumberToName(col)
 		if err != nil {
-			return 0, fmt.Errorf("Failed column name: %w", err)
+			return 0, fmt.Errorf("failed column name: %w", err)
 		}
 		cellRef := fmt.Sprintf("%s%d", colName, 1)
 		val, err := f.GetCellValue(sheetName, cellRef)
 		if err != nil {
-			return 0, fmt.Errorf("Failed get cell value: %w", err)
+			return 0, fmt.Errorf("failed get cell value: %w", err)
 		}
 		if val == "" {
 			return col, nil
@@ -151,7 +155,7 @@ func findColumnIndexes(f *excelize.File) (ColumnIndexes, error) {
 	sheetName := f.GetSheetName(0)
 	rows, err := f.GetRows(sheetName)
 	if err != nil || len(rows) == 0 {
-		return ColumnIndexes{}, fmt.Errorf("Failed to read rows or empty sheet %w", err)
+		return ColumnIndexes{}, fmt.Errorf("failed to read rows or empty sheet %w", err)
 	}
 
 	header := rows[0]

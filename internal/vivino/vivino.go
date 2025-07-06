@@ -17,8 +17,6 @@ import (
 
 const RATINGS_COUNT_THRESHOLD = 75
 
-var yearRegex = regexp.MustCompile(`\b\d{4}\b`)
-
 type Match struct {
 	Url            string
 	ExactVintage   bool
@@ -219,10 +217,6 @@ func stripNumberWords(s string) string {
 		}
 	}
 	return strings.Join(result, " ")
-}
-
-func stripYears(s string) string {
-	return yearRegex.ReplaceAllString(s, "")
 }
 
 func Normalize(s string) string {

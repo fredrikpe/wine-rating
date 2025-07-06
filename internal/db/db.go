@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -77,7 +78,11 @@ func (store *Store) UpsertQuery(query string, hits []VivinoWineDbo) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			log.Printf("failed to rollback: %v", err)
+		}
+	}()
 
 	for _, hit := range hits {
 		_, err := tx.Exec(`
@@ -179,7 +184,11 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 	if err != nil {
 		return nil, time.Time{}, fmt.Errorf("query vivino_wines: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close rows: %v", err)
+		}
+	}()
 
 	var wines []VivinoWineDbo
 
@@ -220,12 +229,20 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 				&v.Statistics.RatingsCount, &v.Statistics.ReviewsCount, &v.Statistics.LabelsCount,
 			)
 			if err != nil {
-				vintageRows.Close()
+				defer func() {
+					if err := vintageRows.Close(); err != nil {
+						log.Printf("failed to close rows: %v", err)
+					}
+				}()
 				return nil, time.Time{}, fmt.Errorf("scan vintage: %w", err)
 			}
 			vintages = append(vintages, v)
 		}
-		vintageRows.Close()
+		defer func() {
+			if err := vintageRows.Close(); err != nil {
+				log.Printf("failed to close rows: %v", err)
+			}
+		}()
 
 		wine.Vintages = vintages
 		wines = append(wines, wine)

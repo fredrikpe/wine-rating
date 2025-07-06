@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -51,7 +52,7 @@ func MatchHandler(db *db.Store) http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(match)
+		_ = json.NewEncoder(w).Encode(match)
 	}
 }
 
@@ -70,6 +71,9 @@ func EnrichHandler(db *db.Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 		w.Header().Set("Content-Disposition", "attachment; filename=\"enriched.xlsx\"")
-		excel.Write(w)
+		if err := excel.Write(w); err != nil {
+			log.Printf("failed to write Excel file: %v", err)
+			http.Error(w, "Failed to write Excel file", http.StatusInternalServerError)
+		}
 	}
 }

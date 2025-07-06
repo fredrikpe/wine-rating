@@ -11,7 +11,11 @@ func TestDecodeVivinoResponseFromFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test JSON: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Fatalf("failed to close f: %v", err)
+		}
+	}()
 
 	hits, err := decodeVivinoResponse(f)
 	if err != nil {
@@ -25,7 +29,11 @@ func TestFindRightTommasiValpolicella(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test JSON: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Fatalf("failed to close f: %v", err)
+		}
+	}()
 
 	hits, err := decodeVivinoResponse(f)
 	if err != nil {

@@ -14,7 +14,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dbSqlite.Close()
+	defer func() {
+		if err := dbSqlite.Close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
 
 	err = db.RunMigrations(dbSqlite)
 	if err != nil {
@@ -26,5 +30,5 @@ func main() {
 	http.HandleFunc("/match", web.MatchHandler(db))
 
 	log.Println("Server started on :8080")
-	http.ListenAndServe(":8080", nil)
+	_ = http.ListenAndServe(":8080", nil)
 }

@@ -63,7 +63,11 @@ func algoliaSearch(query string) ([]VivinoHit, error) {
 	if err != nil {
 		return nil, fmt.Errorf("vivino request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("failed to close body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("vivino returned %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
