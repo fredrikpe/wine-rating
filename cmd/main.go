@@ -31,6 +31,6 @@ func main() {
 	http.Handle("/match", web.WithCORS(http.HandlerFunc(web.MatchHandler(db))))
 	http.Handle("/match/batch", web.WithCORS(http.HandlerFunc(web.MatchBatchHandler(db))))
 
-	log.Println("Server started on :8080")
-	_ = http.ListenAndServe(":8080", nil)
+	log.Println("Server started on :7661")
+	_ = http.ListenAndServe(":7661", nil)
 }

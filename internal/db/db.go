@@ -56,7 +56,8 @@ func RunMigrations(db *sql.DB) error {
 
 	files, err := os.ReadDir(migrationsDir)
 	if err != nil {
-		return fmt.Errorf("read migrations dir: %w", err)
+		log.Println("couldn't find migrations dir: %v", err)
+		return nil
 	}
 
 	// Sort files to run in order (assuming names are timestamped like 20250705_name.sql)
