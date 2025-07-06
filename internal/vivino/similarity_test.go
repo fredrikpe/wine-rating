@@ -274,3 +274,18 @@ func TestSimilarityBarcelonaWrong(t *testing.T) {
 		t.Fatalf("confidence too high")
 	}
 }
+
+func TestSimilarityAnthill(t *testing.T) {
+	c := WineSimilarity(
+		NameProducer{
+			Name: "anthill campbell chardonnay farms ranch",
+		},
+		NameProducer{
+			Name: "Campbell Ranch Vineyard Chardonnay Anthill Farms",
+		},
+	)
+
+	if !QuiteCertain(c) {
+		t.Fatalf("confidence too high")
+	}
+}

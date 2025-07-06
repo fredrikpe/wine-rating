@@ -12,6 +12,10 @@ import (
 
 func main() {
 	dbSqlite, err := sql.Open("sqlite", "./db.sqlite")
+	dbSqlite.SetMaxOpenConns(5)
+	dbSqlite.SetMaxIdleConns(5)
+	log.Println("Stats:", dbSqlite.Stats())
+
 	if err != nil {
 		log.Fatal(err)
 	}

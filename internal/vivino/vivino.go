@@ -67,7 +67,7 @@ func getVivinoHits(db *db.Store, query string) ([]db.VivinoWineDbo, error) {
 		return nil, fmt.Errorf("get query failed: %w", err)
 	}
 	if len(wines) > 0 && !updatedAt.Before(time.Now().AddDate(0, 0, -30)) {
-		log.Println("Returning wines from db")
+		log.Printf("cached query found: %s", query)
 		return wines, nil
 	}
 	hits, err := algoliaSearch(query)

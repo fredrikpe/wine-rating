@@ -18,6 +18,15 @@ type Store struct {
 }
 
 func NewDb(db *sql.DB) *Store {
+	_, err := db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		log.Fatal("Failed to set journal mode:", err)
+	}
+	_, err = db.Exec(`PRAGMA busy_timeout = 5000;`)
+	if err != nil {
+		log.Fatal("Failed to set busy_timeout:", err)
+	}
+
 	return &Store{Db: db}
 }
 
@@ -56,7 +65,7 @@ func RunMigrations(db *sql.DB) error {
 
 	files, err := os.ReadDir(migrationsDir)
 	if err != nil {
-		log.Println("couldn't find migrations dir: %v", err)
+		log.Printf("couldn't find migrations dir: %v", err)
 		return nil
 	}
 
@@ -180,7 +189,6 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 	var updatedAt time.Time
 	var queryID int64
 
-	// Fetch query ID and updated_at
 	err := store.Db.QueryRow(`
 		SELECT id, updated_at
 		FROM vivino_query
@@ -197,10 +205,9 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 	rows, err := store.Db.Query(`
 		SELECT w.id, w.name, w.producer, w.region, w.country, w.ratings_count, w.ratings_average, w.labels_count
 		FROM vivino_query_hit qh
-		JOIN vivino_query q ON q.id = qh.vivino_query_id
 		JOIN vivino_wine w ON w.id = qh.vivino_wine_id
-		WHERE q.normalized_query = ?
-	`, query)
+		WHERE qh.vivino_query_id = ?
+	`, queryID)
 	if err != nil {
 		return nil, time.Time{}, fmt.Errorf("query vivino_wines: %w", err)
 	}
@@ -249,20 +256,16 @@ func (store *Store) GetVivinoQuery(query string) ([]VivinoWineDbo, time.Time, er
 				&v.Statistics.RatingsCount, &v.Statistics.ReviewsCount, &v.Statistics.LabelsCount,
 			)
 			if err != nil {
-				defer func() {
-					if err := vintageRows.Close(); err != nil {
-						log.Printf("failed to close rows: %v", err)
-					}
-				}()
+				if err := vintageRows.Close(); err != nil {
+					log.Printf("failed to close rows: %v", err)
+				}
 				return nil, time.Time{}, fmt.Errorf("scan vintage: %w", err)
 			}
 			vintages = append(vintages, v)
 		}
-		defer func() {
-			if err := vintageRows.Close(); err != nil {
-				log.Printf("failed to close rows: %v", err)
-			}
-		}()
+		if err := vintageRows.Close(); err != nil {
+			log.Printf("failed to close vintageRows: %v", err)
+		}
 
 		wine.Vintages = vintages
 		wines = append(wines, wine)
