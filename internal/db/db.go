@@ -80,10 +80,14 @@ func (store *Store) UpsertQuery(query string, hits []VivinoWineDbo) error {
 	}
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			if err := tx.Rollback(); err != nil {
+				log.Printf("failed to rollback: %v", err)
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			if err := tx.Rollback(); err != nil {
+				log.Printf("failed to rollback: %v", err)
+			}
 		}
 	}()
 
