@@ -2,77 +2,20 @@ package similarity
 
 import (
 	"log"
-	"regexp"
-	"sort"
 	"strings"
-	"unicode"
 	"wine_rating/internal/levenshtein"
-
-	"golang.org/x/text/unicode/norm"
 )
 
-var yearRegex = regexp.MustCompile(`\b\d{4}\b`)
+func Similarity(a, b string) float64 {
+	sim := mongeElkanSimilarity(a, b)
 
-type Wine struct {
-	Name     string
-	Producer string
-	Country  string
-	Region   string
-}
-
-func Similarity(a, b Wine) float64 {
-	nameSim := mongeElkanSimilarity(stripYearAndProducerWords(a), stripYearAndProducerWords(b))
-	producerSim := mongeElkanSimilarity(a.Producer, b.Producer)
-
-	const (
-		wProducer = 0.5
-		wName     = 0.5
-	)
-
-	c := producerSim*wProducer + nameSim*wName
-
-	if false {
-		log.Printf(`DEBUG: Confidence match
-	  Wine A: %-30s
-	  Wine B: %-30s
-
-	  Distances:
-	    Name:     %.2f (%s ↔ %s)
-	    Producer: %.2f (%s ↔ %s)
-
-	  Final Confidence: %.2f
-	`,
-			a.Name, b.Name,
-			nameSim, stripYearAndProducerWords(a), stripYearAndProducerWords(b),
-			producerSim, a.Producer, b.Producer,
-			c,
+	if true {
+		log.Printf(`DEBUG: Similarity: %.2f (%s ↔ %s)`,
+			sim, a, b,
 		)
 	}
 
-	return c
-}
-
-func HighEnough(c float64) bool {
-	return c > 0.75
-}
-
-func Normalize(s string) string {
-	return removeDiacritics(strings.ToLower(s))
-}
-
-func SortedUnique(s string) []string {
-	seen := make(map[string]bool)
-	var tokens []string
-
-	for word := range strings.FieldsSeq(s) {
-		if !seen[word] {
-			seen[word] = true
-			tokens = append(tokens, word)
-		}
-	}
-
-	sort.Strings(tokens)
-	return tokens
+	return sim
 }
 
 func mongeElkanSimilarity(a, b string) float64 {
@@ -82,8 +25,8 @@ func mongeElkanSimilarity(a, b string) float64 {
 }
 
 func mongeElkanSimilarityOneWay(a, b string) float64 {
-	toksA := strings.Fields(removeDiacritics(strings.ToLower(a)))
-	toksB := strings.Fields(removeDiacritics(strings.ToLower(b)))
+	toksA := strings.Fields(a)
+	toksB := strings.Fields(b)
 
 	var total float64
 	for _, tokA := range toksA {
@@ -100,36 +43,4 @@ func mongeElkanSimilarityOneWay(a, b string) float64 {
 		return 0.0
 	}
 	return total / float64(len(toksA))
-}
-
-func removeDiacritics(input string) string {
-	// Normalize to NFD (decomposed form: é → e +  ́ )
-	t := norm.NFD.String(input)
-
-	// Filter out all non-spacing marks (diacritics)
-	var b strings.Builder
-	for _, r := range t {
-		if unicode.Is(unicode.Mn, r) {
-			continue // skip diacritic
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
-}
-
-func stripYearAndProducerWords(w Wine) string {
-	name := strings.ToLower(w.Name)
-	producer := strings.ToLower(w.Producer)
-
-	// Remove 4-digit year
-	name = yearRegex.ReplaceAllString(name, "")
-
-	// Remove producer words
-	prodWords := strings.FieldsSeq(producer)
-	for word := range prodWords {
-		name = strings.ReplaceAll(name, word, "")
-	}
-
-	// Normalize spacing
-	return strings.Join(strings.Fields(name), " ")
 }

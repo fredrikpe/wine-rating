@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"wine_rating/internal/db"
-	"wine_rating/internal/similarity"
 	"wine_rating/internal/vivino"
 )
 
@@ -14,6 +15,15 @@ type MatchRequest struct {
 	Name     string `json:"name"`
 	Producer string `json:"producer"`
 	Year     *int   `json:"year,omitempty"`
+}
+
+func (req MatchRequest) toQuery() string {
+	var queryParts []string
+	if req.Year != nil {
+		queryParts = append(queryParts, strconv.Itoa(*req.Year))
+	}
+	queryParts = append(queryParts, req.Name, req.Producer)
+	return strings.Join(queryParts, " ")
 }
 
 func MatchHandler(db *db.Store) http.HandlerFunc {
@@ -29,13 +39,13 @@ func MatchHandler(db *db.Store) http.HandlerFunc {
 			return
 		}
 
-		match, err := vivino.FindMatch(db, req.Name, req.Producer, req.Year)
+		match, err := vivino.FindMatch(db, req.toQuery())
 		if err != nil {
 			http.Error(w, fmt.Sprintf("FindMatch error: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		if similarity.HighEnough(match.Similarity) {
+		if vivino.HighEnough(match.Similarity) {
 			http.Error(w, "No sufficiently confident match found", http.StatusNotFound)
 			return
 		}

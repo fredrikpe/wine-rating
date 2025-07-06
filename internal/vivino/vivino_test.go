@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
-	"wine_rating/internal/similarity"
 )
 
 func TestDecodeVivinoResponseFromFile(t *testing.T) {
@@ -33,13 +32,7 @@ func TestFindRightTommasiValpolicella(t *testing.T) {
 		t.Fatalf("unexpected decode error: %v", err)
 	}
 
-	wine := similarity.Wine{
-		Name:     "Valpolicella",
-		Producer: "Tommasi",
-		Region:   "Valpolicella",
-		Country:  "",
-	}
-	hit, _ := bestMatch(hitsToDbos(hits), wine)
+	hit, _ := bestMatch(hitsToDbos(hits), "Valpolicella Tommasi")
 	if hit.Id != 1299576 {
 		t.Fatalf("Found wrong wine: %v", hit)
 	}

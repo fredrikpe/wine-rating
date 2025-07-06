@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"wine_rating/internal/db"
-	"wine_rating/internal/similarity"
 	"wine_rating/internal/vivino"
 
 	"github.com/xuri/excelize/v2"
@@ -75,8 +74,13 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 	name := row[columnIndexes.NameCol]
 	producer := row[columnIndexes.ProducerCol]
 	vintage := resolveVintage(row, columnIndexes.VintageCol, name)
+	req := MatchRequest{
+		Name:     name,
+		Producer: producer,
+		Year:     vintage,
+	}
 
-	match, err := vivino.FindMatch(db, name, producer, vintage)
+	match, err := vivino.FindMatch(db, req.toQuery())
 	if err != nil {
 		return fmt.Errorf("find match: %w", err)
 	}
@@ -85,7 +89,7 @@ func enrichRow(db *db.Store, excel *excelize.File, columnIndexes ColumnIndexes, 
 		return fmt.Sprintf("%s%d", col, rowNum)
 	}
 
-	if !similarity.HighEnough(match.Similarity) {
+	if !vivino.HighEnough(match.Similarity) {
 		return nil
 	}
 

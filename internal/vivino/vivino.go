@@ -3,14 +3,21 @@ package vivino
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"wine_rating/internal/db"
 	"wine_rating/internal/similarity"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 const RATINGS_COUNT_THRESHOLD = 75
+
+var yearRegex = regexp.MustCompile(`\b\d{4}\b`)
 
 type Match struct {
 	Url            string
@@ -19,16 +26,14 @@ type Match struct {
 	Similarity     float64
 }
 
-func FindMatch(store *db.Store, name, producer string, year *int) (Match, error) {
-	wines, err := getVivinoHits(store, normalizeQuery(name, producer))
+func FindMatch(store *db.Store, query string) (Match, error) {
+	query, year := parseQuery(query)
+	wines, err := getVivinoHits(store, query)
 	if err != nil {
 		return Match{}, fmt.Errorf("getVivinoHits failed: %w", err)
 	}
 
-	best, confidence := bestMatch(wines, similarity.Wine{
-		Name:     name,
-		Producer: producer,
-	})
+	best, confidence := bestMatch(wines, query)
 
 	var ratingsAverage *float64
 	exactVintage := false
@@ -111,27 +116,130 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 	return wine
 }
 
-func bestMatch(hits []db.VivinoWineDbo, wine similarity.Wine) (db.VivinoWineDbo, float64) {
-	var best db.VivinoWineDbo
-	confidence := 0.0
-	for _, hit := range hits {
-		c := similarity.Similarity(
-			similarity.Wine{
-				Name:     hit.Name,
-				Producer: hit.Producer,
-				Region:   hit.Region,
-				Country:  hit.Country,
-			},
-			wine,
-		)
-		if c > confidence {
-			best = hit
-			confidence = c
-		}
-	}
-	return best, confidence
+func HighEnough(c float64) bool {
+	return c > 0.75
 }
 
-func normalizeQuery(name, producer string) string {
-	return strings.Join(similarity.SortedUnique(similarity.Normalize(name+" "+producer)), " ")
+type NameProducer struct {
+	Name     string
+	Producer string
+}
+
+func WineSimilarity(a, b NameProducer) float64 {
+	return similarity.Similarity(
+		normalizeQuery(a.Name+" "+a.Producer),
+		normalizeQuery(b.Name+" "+b.Producer),
+	)
+}
+
+func bestMatch(hits []db.VivinoWineDbo, query string) (db.VivinoWineDbo, float64) {
+	var best db.VivinoWineDbo
+	sim := 0.0
+	for _, hit := range hits {
+		s := WineSimilarity(
+			NameProducer{Name: hit.Name, Producer: hit.Producer},
+			NameProducer{Name: query},
+		)
+		if s > sim {
+			best = hit
+			sim = s
+		}
+	}
+	return best, sim
+}
+
+func parseQuery(q string) (string, *int) {
+	year := closestPastYear(extractValidYears(q))
+
+	return normalizeQuery(q), year
+}
+
+func extractValidYears(s string) []int {
+	re := regexp.MustCompile(`\b(\d{4})\b`)
+	matches := re.FindAllString(s, -1)
+	currentYear := time.Now().Year()
+
+	var years []int
+	for _, m := range matches {
+		y, err := strconv.Atoi(m)
+		if err != nil || y < 1700 || y > currentYear {
+			continue
+		}
+		years = append(years, y)
+	}
+	return years
+}
+
+func closestPastYear(years []int) *int {
+	if len(years) == 0 {
+		return nil
+	}
+	currentYear := time.Now().Year()
+	var closest *int
+	minDiff := currentYear + 1
+
+	for _, y := range years {
+		diff := currentYear - y
+		if diff < minDiff {
+			minDiff = diff
+			val := y
+			closest = &val
+		}
+	}
+	return closest
+}
+
+func normalizeQuery(q string) string {
+	return strings.Join(SortedUnique(stripNumberWords(Normalize(q))), " ")
+}
+
+func removeDiacritics(input string) string {
+	// Normalize to NFD (decomposed form: é → e +  ́ )
+	t := norm.NFD.String(input)
+
+	// Filter out all non-spacing marks (diacritics)
+	var b strings.Builder
+	for _, r := range t {
+		if unicode.Is(unicode.Mn, r) {
+			continue // skip diacritic
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
+}
+
+func stripNumberWords(s string) string {
+	numberRe := regexp.MustCompile(`^\d+$`)
+	priceRe := regexp.MustCompile(`^\d+,-$`)
+
+	var result []string
+	for f := range strings.FieldsSeq(s) {
+		if !numberRe.MatchString(f) && !priceRe.MatchString(f) {
+			result = append(result, f)
+		}
+	}
+	return strings.Join(result, " ")
+}
+
+func stripYears(s string) string {
+	return yearRegex.ReplaceAllString(s, "")
+}
+
+func Normalize(s string) string {
+	return removeDiacritics(strings.ToLower(s))
+}
+
+func SortedUnique(s string) []string {
+	seen := make(map[string]bool)
+	var tokens []string
+
+	for word := range strings.FieldsSeq(s) {
+		if !seen[word] {
+			seen[word] = true
+			tokens = append(tokens, word)
+		}
+	}
+
+	sort.Strings(tokens)
+	return tokens
 }
