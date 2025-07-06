@@ -1,13 +1,16 @@
-CREATE TABLE vivino_wine (
+CREATE TABLE IF NOT EXISTS vivino_wine (
     id              INTEGER PRIMARY KEY,
     name            TEXT NOT NULL,
     producer        TEXT,
     region          TEXT,
     country         TEXT,
+    ratings_average REAL NOT NULL,
+    ratings_count   INTEGER NOT NULL,
+    labels_count    INTEGER NOT NULL,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE vivino_vintage (
+CREATE TABLE IF NOT EXISTS vivino_vintage (
     id               INTEGER PRIMARY KEY,
     vivino_wine_id   INTEGER NOT NULL,
     year             TEXT,
@@ -19,13 +22,13 @@ CREATE TABLE vivino_vintage (
     UNIQUE (vivino_wine_id, year)
 );
 
-CREATE TABLE vivino_query (
+CREATE TABLE IF NOT EXISTS vivino_query (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     normalized_query  TEXT NOT NULL UNIQUE,
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE vivino_query_hit (
+CREATE TABLE IF NOT EXISTS vivino_query_hit (
     vivino_query_id    INTEGER NOT NULL,
     vivino_wine_id     INTEGER NOT NULL,
     PRIMARY KEY (vivino_query_id, vivino_wine_id),
@@ -33,7 +36,7 @@ CREATE TABLE vivino_query_hit (
     FOREIGN KEY (vivino_wine_id) REFERENCES vivino_wine(id) ON DELETE CASCADE
 );
 
-CREATE TABLE grape (
+CREATE TABLE IF NOT EXISTS grape (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     vivino_id     INTEGER NOT NULL UNIQUE,
     name          TEXT NOT NULL,

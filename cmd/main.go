@@ -5,12 +5,13 @@ import (
 	"log"
 	"net/http"
 
+	_ "modernc.org/sqlite"
 	"wine_rating/internal/db"
 	"wine_rating/internal/web"
 )
 
 func main() {
-	dbSqlite, err := sql.Open("sqlite3", "./db.sqlite")
+	dbSqlite, err := sql.Open("sqlite", "./db.sqlite")
 	if err != nil {
 		log.Fatal(err)
 	}

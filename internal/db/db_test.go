@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
+	_ "modernc.org/sqlite"
 )
 
 func setupTestDB(t *testing.T) *Store {
-	sqlDB, err := sql.Open("sqlite3", "file::memory:?cache=shared")
+	sqlDB, err := sql.Open("sqlite", "file::memory:?cache=shared")
 	require.NoError(t, err)
 
 	store := NewDb(sqlDB)

@@ -3,14 +3,14 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
 	"time"
-
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/source/file"
 )
 
 type Store struct {
@@ -52,22 +52,34 @@ type VintageStatsDbo struct {
 }
 
 func RunMigrations(db *sql.DB) error {
-	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	migrationsDir := getMigrationPath()
+
+	files, err := os.ReadDir(migrationsDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("read migrations dir: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", getMigrationPath()),
-		"sqlite3", driver,
-	)
-	if err != nil {
-		return err
-	}
+	// Sort files to run in order (assuming names are timestamped like 20250705_name.sql)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Name() < files[j].Name()
+	})
 
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		return err
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".sql") {
+			continue
+		}
+
+		path := filepath.Join(migrationsDir, file.Name())
+		sqlBytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read migration file %s: %w", path, err)
+		}
+
+		log.Printf("Running migration: %s", file.Name())
+		_, err = db.Exec(string(sqlBytes))
+		if err != nil {
+			return fmt.Errorf("execute migration %s: %w", path, err)
+		}
 	}
 
 	return nil
