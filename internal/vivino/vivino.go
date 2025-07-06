@@ -66,7 +66,7 @@ func getVivinoHits(db *db.Store, query string) ([]db.VivinoWineDbo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get query failed: %w", err)
 	}
-	if len(wines) > 0 && updatedAt.Before(time.Now().AddDate(0, 0, -30)) {
+	if len(wines) > 0 && !updatedAt.Before(time.Now().AddDate(0, 0, -30)) {
 		log.Println("Returning wines from db")
 		return wines, nil
 	}
@@ -101,6 +101,7 @@ func hitToDbo(hit VivinoHit) db.VivinoWineDbo {
 		Country:    hit.Winery.Region.Country,
 		Statistics: db.WineStatsDbo(hit.Statistics),
 	}
+	log.Printf("%+v", wine)
 
 	for _, v := range hit.Vintages {
 		wine.Vintages = append(wine.Vintages, db.VivinoVintageDbo{

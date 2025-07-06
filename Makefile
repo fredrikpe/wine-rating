@@ -32,5 +32,5 @@ run:
 	go run ./cmd/main.go
 
 # helpful combo
-check: tidy fmt vet test
+check: tidy fmt vet test lint
 

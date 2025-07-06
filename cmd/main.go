@@ -26,8 +26,8 @@ func main() {
 	}
 	db := db.NewDb(dbSqlite)
 
-	http.HandleFunc("/enrich", web.EnrichHandler(db))
-	http.HandleFunc("/match", web.MatchHandler(db))
+	http.Handle("/enrich", web.WithCORS(http.HandlerFunc(web.EnrichHandler(db))))
+	http.Handle("/match", web.WithCORS(http.HandlerFunc(web.MatchHandler(db))))
 
 	log.Println("Server started on :8080")
 	_ = http.ListenAndServe(":8080", nil)

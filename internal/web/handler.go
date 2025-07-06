@@ -27,6 +27,21 @@ func (req MatchRequest) toQuery() string {
 	return strings.Join(queryParts, " ")
 }
 
+func WithCORS(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}
+
 func MatchHandler(db *db.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req MatchRequest
@@ -43,11 +58,6 @@ func MatchHandler(db *db.Store) http.HandlerFunc {
 		match, err := vivino.FindMatch(db, req.toQuery())
 		if err != nil {
 			http.Error(w, fmt.Sprintf("FindMatch error: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		if vivino.HighEnough(match.Similarity) {
-			http.Error(w, "No sufficiently confident match found", http.StatusNotFound)
 			return
 		}
 

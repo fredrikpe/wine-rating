@@ -125,7 +125,7 @@ func (store *Store) UpsertQuery(query string, hits []VivinoWineDbo) error {
 
 	for _, v := range hits {
 		_, err := tx.Exec(`
-			INSERT INTO vivino_query_hit (vivino_query_id, vivino_wine_id)
+			INSERT OR IGNORE INTO vivino_query_hit (vivino_query_id, vivino_wine_id)
 			VALUES (?, ?)`,
 			queryID, v.Id)
 		if err != nil {
