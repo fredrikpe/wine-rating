@@ -69,10 +69,10 @@ func MatchBatchHandler(db *db.Store) http.HandlerFunc {
 
 		var responses []MatchBatchResult
 		for _, req := range requests[:min(len(requests), 50)] {
-			if req.Query == "" {
+			if len(req.Query) < 10 {
 				responses = append(responses, MatchBatchResult{
 					Query: req.Query,
-					Error: "empty 'query'",
+					Error: "invalid query",
 				})
 				continue
 			}
